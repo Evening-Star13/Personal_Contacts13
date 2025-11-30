@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personnel Tracker System (Local IndexedDB)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Dark Theme Styles */
+        :root { --neon-purple: #c084fc; }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .container-card { background-color: #1e293b; border: 1px solid #334155; }
+        
+        /* The container class now only defines height/overflow for scrolling */
+        .data-table-container { 
+            max-height: 50vh; 
+            overflow-y: auto;
+        }
+
+        .tree-row:hover { background-color: #334155; }
+        input, textarea {
+            background-color: #334155; color: #f8fafc; border-color: #475569;
+        }
+        input:focus, textarea:focus {
+            border-color: var(--neon-purple); box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.5);
+        }
+        .data-table-container thead { background-color: #1e293b; border-bottom: 2px solid var(--neon-purple); }
+        
+        /* Style for the checkboxes */
+        input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            border: 1px solid #c084fc;
+            width: 1rem;
+            height: 1rem;
+            cursor: pointer;
+            display: inline-block;
+            vertical-align: middle;
+            position: relative;
+            background-color: #1e293b;
+            border-radius: 0.25rem;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #c084fc;
+            border-color: #c084fc;
+        }
+        input[type="checkbox"]:checked:after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #1e293b;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        /* Custom CSS for Slide-out Panel */
+        #analytics-sidebar {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(100%); /* Start hidden */
+            z-index: 100;
+        }
+        #analytics-sidebar.open {
+            transform: translateX(0); /* Slide open */
+        }
+        #sidebar-overlay {
+            transition: opacity 0.3s ease-in-out;
+            z-index: 90;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    
+    <!-- Sidebar Overlay -->
+    <div id="sidebar-overlay" onclick="toggleSidebar(false)" class="fixed inset-0 bg-black bg-opacity-70 hidden"></div>
+
+    <!-- Analytics Sidebar -->
+    <aside id="analytics-sidebar" class="fixed top-0 right-0 h-full w-full max-w-xs container-card shadow-2xl p-6 overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-fuchsia-400">System Analytics</h2>
+            <button onclick="toggleSidebar(false)" class="text-white hover:text-fuchsia-400 p-1 rounded-full bg-gray-700/50 transition">
+                <!-- Close Icon -->
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="space-y-4">
+            
+            <div class="bg-indigo-900/40 p-4 rounded-xl shadow-lg border border-indigo-700/50">
+                <p class="text-sm font-medium text-indigo-300">Total Contacts</p>
+                <p id="stat-total-contacts" class="text-3xl font-extrabold text-white mt-1">0</p>
+            </div>
+            
+            <div class="bg-green-900/40 p-4 rounded-xl shadow-lg border border-green-700/50">
+                <p class="text-sm font-medium text-green-300">With Profile Image</p>
+                <p id="stat-with-image" class="text-3xl font-extrabold text-white mt-1">0</p>
+            </div>
+
+            <div class="bg-red-900/40 p-4 rounded-xl shadow-lg border border-red-700/50">
+                <p class="text-sm font-medium text-red-300">Needs Profile Image</p>
+                <p id="stat-without-image" class="text-3xl font-extrabold text-white mt-1">0</p>
+            </div>
+        </div>
+        
+    </aside>
+
+    <!-- Main Content Area -->
+    <div id="app" class="max-w-4xl mx-auto container-card shadow-2xl rounded-xl p-6 md:p-10">
+        <header class="flex justify-between items-center mb-6 border-b-2 border-fuchsia-400 pb-2">
+            <h1 class="text-3xl font-extrabold text-white flex items-center">
+                Contacts
+            </h1>
+            <!-- Hamburger Menu Button -->
+            <button onclick="toggleSidebar(true)" class="p-2 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-700 transition" aria-label="Open Analytics Menu">
+                <!-- Corrected SVG with equal line lengths -->
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+        </header>
+
+        <!-- Status Message -->
+        <div id="status-message" class="text-sm font-mono mb-4 p-3 rounded-lg bg-green-900/30 text-green-400">
+            ✅ Database status: Initializing IndexedDB...
+        </div>
+
+        <!-- Add New Contact Form -->
+        <div class="bg-gray-800 p-5 rounded-lg mb-8 border border-fuchsia-500/20">
+            <h2 class="text-xl font-semibold mb-4 text-fuchsia-400">Add New Contact</h2>
+            <form id="add-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input type="text" id="name" placeholder="Full Name *" required class="p-2 rounded-lg">
+                <input type="text" id="role" placeholder="Role/Job *" required class="p-2 rounded-lg">
+                <input type="tel" id="phone" placeholder="Phone #" class="p-2 rounded-lg">
+                <input type="email" id="email" placeholder="Email" class="p-2 rounded-lg">
+                
+                <div class="col-span-1 sm:col-span-2">
+                    <input type="file" id="image-file" accept="image/*" class="hidden">
+                    <label for="image-file" id="image-label" class="block w-full p-2 bg-gray-700 border-2 border-dashed border-fuchsia-400/50 text-fuchsia-300 text-center rounded-lg cursor-pointer hover:bg-gray-900 transition">
+                        Click to Select Profile Image (Optional)
+                    </label>
+                    <input type="hidden" id="image-data-url">
+                </div>
+
+                <textarea id="notes" placeholder="Notes (optional)" rows="3" class="col-span-1 sm:col-span-2 p-2 rounded-lg"></textarea>
+                
+                <button type="submit" id="add-btn"
+                        class="col-span-1 sm:col-span-2 py-3 bg-fuchsia-600 text-white font-bold rounded-lg hover:bg-fuchsia-700 transition">
+                    ➕ Add Person to Nexus
+                </button>
+            </form>
+        </div>
+
+        <!-- Search Input -->
+        <input type="text" id="search-input" placeholder="🔍 Search contacts by name..." 
+               class="w-full p-3 rounded-lg bg-gray-700 text-white mb-6 border border-gray-600 focus:ring-fuchsia-500 focus:border-fuchsia-500">
+        
+        <!-- Bulk Actions Bar -->
+        <div id="bulk-actions-bar" class="hidden flex flex-col sm:flex-row items-center justify-between p-3 mb-4 rounded-xl bg-gray-900 border border-fuchsia-700/50 shadow-xl">
+            <span id="bulk-selection-count" class="font-semibold text-lg text-fuchsia-400 mb-2 sm:mb-0">
+                0 contacts selected
+            </span>
+            <div class="flex gap-3">
+                <button id="bulk-export-btn" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+                    📄 Export Selected (CSV)
+                </button>
+                <button id="bulk-delete-btn" class="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">
+                    🗑️ Delete Selected
+                </button>
+            </div>
+        </div>
+
+        <!-- Global Action Buttons -->
+        <div class="flex flex-col md:flex-row gap-3 mb-6">
+             <button id="export-all-csv-btn" class="w-full md:w-auto px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+                📄 Export All to CSV
+            </button>
+             <button id="backup-json-btn" class="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+                📥 Backup to JSON
+            </button>
+             <!-- Restore Button and Hidden File Input -->
+             <input type="file" id="restore-file-input" accept=".json" class="hidden">
+             <button id="restore-json-btn" class="w-full md:w-auto px-4 py-2 bg-yellow-600 text-gray-900 font-semibold rounded-lg hover:bg-yellow-700 transition">
+                📤 Restore from JSON
+            </button>
+        </div>
+
+        <!-- Personnel Directory Table -->
+        <div class="mb-6 rounded-xl overflow-hidden border border-gray-700/50">
+            <!-- Collapse Button -->
+            <button id="toggle-list-btn" 
+                    aria-expanded="false" 
+                    aria-controls="contact-list-container"
+                    class="w-full text-left flex justify-between items-center px-4 py-3 bg-gray-700/50 hover:bg-gray-700 transition font-extrabold text-white text-lg">
+                Personnel Directory
+                <!-- Collapse/Expand Arrow Icon (Starts collapsed/rotated) -->
+                <svg id="toggle-icon" class="w-6 h-6 transition-transform duration-300 transform rotate-180 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+
+            <!-- Table Container (Starts collapsed) -->
+            <div id="contact-list-container" class="data-table-container transition-all duration-300" style="max-height: 0;">
+                <table class="min-w-full divide-y divide-gray-700">
+                    <thead>
+                        <tr>
+                            <!-- Checkbox Column -->
+                            <th class="p-3 text-center text-xs font-medium text-fuchsia-400 uppercase tracking-wider">
+                                <input type="checkbox" id="select-all-checkbox" title="Select All">
+                            </th>
+                            <!-- Name Column -->
+                            <th onclick="handleSort('name')" class="px-3 py-3 text-left text-xs font-medium text-fuchsia-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700/50 transition">
+                                Name & Contact Badges <span id="sort-icon-name" class="ml-1 inline-block"></span>
+                            </th>
+                            <!-- Role Column (Hidden on Small Screens) -->
+                            <th onclick="handleSort('role')" class="px-3 py-3 text-left text-xs font-medium text-fuchsia-400 uppercase tracking-wider hidden sm:table-cell cursor-pointer hover:bg-gray-700/50 transition">
+                                Role <span id="sort-icon-role" class="ml-1 inline-block"></span>
+                            </th>
+                            <!-- Contact Column (Hidden on Tablet/Mobile) -->
+                            <th class="px-3 py-3 text-left text-xs font-medium text-fuchsia-400 uppercase tracking-wider hidden md:table-cell">Phone / Email</th>
+                            <!-- Actions Column -->
+                            <th class="px-3 py-3 text-left text-xs font-medium text-fuchsia-400 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="people-list" class="divide-y divide-gray-700 bg-gray-800/50">
+                        <tr><td colspan="5" class="text-center py-4 text-gray-400">Loading local data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-90 hidden items-center justify-center p-4 z-50">
+        <div class="container-card rounded-xl p-6 w-full max-w-md">
+            <h3 class="text-2xl font-bold mb-4 text-fuchsia-400">Contact Details</h3>
+            <form id="edit-form" class="space-y-4">
+                <input type="hidden" id="edit-id">
+                <input type="text" id="edit-name" placeholder="Full Name" required class="w-full p-2 rounded-lg">
+                <input type="text" id="edit-role" placeholder="Role/Job" required class="w-full p-2 rounded-lg">
+                <input type="tel" id="edit-phone" placeholder="Phone #" class="w-full p-2 rounded-lg">
+                <input type="email" id="edit-email" placeholder="Email" class="w-full p-2 rounded-lg">
+                
+                <div class="text-center p-3 border border-gray-600 rounded-lg bg-gray-700">
+                    <img id="edit-image-preview" class="w-24 h-24 rounded-full mx-auto mb-2 object-cover border-2 border-fuchsia-400" src="https://placehold.co/96x96/dddddd/ffffff?text=No+Img" alt="Profile Image">
+                    <input type="file" id="edit-image-file" accept="image/*" class="hidden">
+                    <label for="edit-image-file" class="text-fuchsia-400 cursor-pointer hover:text-fuchsia-300">Change Image</label>
+                    <input type="hidden" id="edit-image-data-url">
+                </div>
+
+                <textarea id="edit-notes" placeholder="Notes (optional)" rows="4" class="w-full p-2 rounded-lg"></textarea>
+                
+                <div class="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-end">
+                    <button type="button" id="delete-btn" onclick="deletePersonWrapper(this)" data-delete-state="0" class="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                        🗑️ Delete
+                    </button>
+                    <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition">
+                        💾 Save Changes
+                    </button>
+                    <button type="button" onclick="closeModal()" class="w-full sm:w-auto px-4 py-2 bg-gray-600 text-gray-200 rounded-lg hover:bg-gray-700 transition">
+                        Close
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const DB_NAME = 'PersonnelTrackerDB';
+        const STORE_NAME = 'people';
+        const DB_VERSION = 1;
+        let db = null;
+        let allPeople = [];
+        
+        // State for sorting and bulk selection
+        let currentSort = { key: 'name', direction: 'asc' };
+        const selectedPeople = new Set(); 
+        
+        const statusElement = document.getElementById('status-message');
+        const editModal = document.getElementById('edit-modal');
+        const searchInput = document.getElementById('search-input');
+        
+        // Elements for collapse logic
+        const toggleButton = document.getElementById('toggle-list-btn');
+        const contactListContainer = document.getElementById('contact-list-container');
+        const toggleIcon = document.getElementById('toggle-icon');
+
+        // Analytics elements
+        const statTotalContacts = document.getElementById('stat-total-contacts');
+        const statWithImage = document.getElementById('stat-with-image');
+        const statWithoutImage = document.getElementById('stat-without-image');
+
+        // Bulk action elements
+        const bulkActionBar = document.getElementById('bulk-actions-bar');
+        const bulkSelectionCount = document.getElementById('bulk-selection-count');
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        
+        // Sidebar elements
+        const analyticsSidebar = document.getElementById('analytics-sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial DB Load
+            loadData(); 
+
+            // Form Submit Listener
+            document.getElementById('add-form').addEventListener('submit', handleAddFormSubmit);
+            document.getElementById('edit-form').addEventListener('submit', handleEditFormSubmit);
+            
+            // File/Image Listeners
+            document.getElementById('image-file').addEventListener('change', handleImageFileChange);
+            document.getElementById('edit-image-file').addEventListener('change', handleEditImageFileChange);
+            
+            // Search Listener
+            searchInput.addEventListener('input', filterPeople);
+
+            // Bulk Action Listeners
+            selectAllCheckbox.addEventListener('change', (e) => toggleSelectAll(e.target.checked));
+            document.getElementById('bulk-delete-btn').addEventListener('click', bulkDeleteSelected);
+            document.getElementById('bulk-export-btn').addEventListener('click', bulkExportSelected);
+            
+            // Global Actions
+            document.getElementById('export-all-csv-btn').addEventListener('click', exportAllCSV);
+            document.getElementById('backup-json-btn').addEventListener('click', backupJSON);
+            document.getElementById('restore-json-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
+            document.getElementById('restore-file-input').addEventListener('change', restoreJSON);
+
+            // Personnel Directory Collapse Listener (The missing piece!)
+            toggleButton.addEventListener('click', toggleList);
+        });
+
+        // --- SIDEBAR CONTROL ---
+        window.toggleSidebar = function(open) {
+            if (open) {
+                analyticsSidebar.classList.add('open');
+                sidebarOverlay.classList.remove('hidden');
+            } else {
+                analyticsSidebar.classList.remove('open');
+                sidebarOverlay.classList.add('hidden');
+            }
+        }
+        
+        // --- DIRECTORY COLLAPSE CONTROL (The other missing piece!) ---
+        function toggleList() {
+            const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+            
+            if (isExpanded) {
+                // Collapse
+                contactListContainer.style.maxHeight = '0';
+                toggleIcon.classList.add('rotate-180');
+                toggleButton.setAttribute('aria-expanded', 'false');
+            } else {
+                // Expand
+                // Set to a size slightly larger than expected content, or use scrollHeight (but 50vh is safer/smoother transition)
+                contactListContainer.style.maxHeight = '50vh'; 
+                toggleIcon.classList.remove('rotate-180');
+                toggleButton.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+
+        // --- INDEXEDDB UTILITIES ---
+
+        function updateStatus(message, isError = false) {
+            statusElement.innerHTML = message;
+            if (isError) {
+                statusElement.classList.remove('bg-green-900/30', 'text-green-400');
+                statusElement.classList.add('bg-red-900/30', 'text-red-400');
+            } else {
+                statusElement.classList.remove('bg-red-900/30', 'text-red-400');
+                statusElement.classList.add('bg-green-900/30', 'text-green-400');
+            }
+        }
+
+        function getDatabase() {
+            return new Promise((resolve, reject) => {
+                if (db) {
+                    resolve(db);
+                    return;
+                }
+                updateStatus("🟡 Database status: Attempting to open IndexedDB...");
+
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onupgradeneeded = (event) => {
+                    const dbInstance = event.target.result;
+                    if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+                        dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    updateStatus("✅ Database status: Connected and ready.");
+                    resolve(db);
+                };
+
+                request.onerror = (event) => {
+                    console.error("IndexedDB Connection Error:", event.target.error);
+                    updateStatus(`❌ Database status: Failed to connect. Error: ${event.target.error.name}`, true);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function transaction(mode) {
+            const dbInstance = await getDatabase();
+            return dbInstance.transaction([STORE_NAME], mode).objectStore(STORE_NAME);
+        }
+
+        async function getAllPeople() {
+            try {
+                const store = await transaction('readonly');
+                const request = store.getAll();
+
+                return new Promise((resolve) => {
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (e) => {
+                        console.error("Error fetching people data:", e.target.error);
+                        resolve([]); 
+                    };
+                });
+            } catch (e) {
+                console.error("Database transaction unavailable:", e);
+                return [];
+            }
+        }
+        
+        async function loadData() {
+            const listElement = document.getElementById('people-list');
+            listElement.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-400">Fetching data...</td></tr>`;
+
+            try {
+                allPeople = await getAllPeople();
+                
+                // 1. Clear selection and update bulk controls
+                selectedPeople.clear();
+                updateBulkActionControls();
+                
+                // 2. Apply sorting logic
+                allPeople.sort((a, b) => {
+                    const aVal = (a[currentSort.key] || '').toLowerCase();
+                    const bVal = (b[currentSort.key] || '').toLowerCase();
+                    
+                    if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                
+                // 3. Update Analytics
+                updateAnalytics(allPeople);
+
+                // 4. Render filtered/sorted list
+                filterPeople(); 
+            } catch (e) {
+                console.error("Failed to load all data during startup:", e);
+                listElement.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-400">🚨 Failed to load contacts from local storage.</td></tr>`;
+            }
+        }
+        
+        // --- ANALYTICS LOGIC ---
+        function updateAnalytics(people) {
+            const total = people.length;
+            const withImage = people.filter(p => p.imageDataURL && p.imageDataURL.length > 0 && p.imageDataURL !== 'https://placehold.co/96x96/dddddd/ffffff?text=No+Img').length;
+            const withoutImage = total - withImage;
+
+            statTotalContacts.textContent = total;
+            statWithImage.textContent = withImage;
+            statWithoutImage.textContent = withoutImage;
+        }
+
+        async function savePerson(personData) {
+            try {
+                const store = await transaction('readwrite');
+                // Ensure IDs are unique and incrementing 
+                const request = store.add({...personData, id: Date.now()}); 
+                request.onsuccess = () => loadData();
+                request.onerror = (e) => console.error("Save failed:", e.target.error);
+            } catch (e) { console.error("Failed to execute save transaction.", e); }
+        }
+
+        async function updatePerson(id, personData) {
+            try {
+                const store = await transaction('readwrite');
+                const request = store.put({...personData, id: id}); 
+                request.onsuccess = () => loadData();
+                request.onerror = (e) => console.error("Update failed:", e.target.error);
+            } catch (e) { console.error("Failed to execute update transaction.", e); }
+        }
+
+        async function deletePerson(id) {
+            try {
+                const store = await transaction('readwrite');
+                const request = store.delete(id);
+                request.onsuccess = () => loadData();
+                request.onerror = (e) => console.error("Delete failed:", e.target.error);
+            } catch (e) { console.error("Failed to execute delete transaction.", e); }
+        }
+
+
+        // --- SEARCH/FILTER CONTROL ---
+
+        const filterPeople = () => {
+            const query = searchInput.value.toLowerCase().trim();
+            
+            const filtered = allPeople.filter(person => {
+                return (person.name || '').toLowerCase().includes(query) ||
+                       (person.role || '').toLowerCase().includes(query); 
+            });
+            
+            renderPeopleList(filtered);
+        };
+        
+        // --- IMAGE HANDLING ---
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        async function handleImageFileChange(e) {
+            const file = e.target.files[0];
+            const imageLabel = document.getElementById('image-label');
+            const imageDataUrlInput = document.getElementById('image-data-url');
+            
+            if (file) {
+                try {
+                    const dataUrl = await fileToBase64(file);
+                    imageDataUrlInput.value = dataUrl;
+                    imageLabel.textContent = `Image Selected: ${file.name}`;
+                    imageLabel.classList.remove('border-fuchsia-400/50');
+                    imageLabel.classList.add('border-green-400/50');
+                } catch (error) {
+                    console.error("Error converting file to base64:", error);
+                    imageDataUrlInput.value = '';
+                    imageLabel.textContent = 'Error loading image (Click to try again)';
+                    imageLabel.classList.add('border-fuchsia-400/50');
+                    imageLabel.classList.remove('border-green-400/50');
+                }
+            } else {
+                 imageDataUrlInput.value = '';
+                 imageLabel.textContent = 'Click to Select Profile Image (Optional)';
+                 imageLabel.classList.add('border-fuchsia-400/50');
+                 imageLabel.classList.remove('border-green-400/50');
+            }
+        }
+        
+        async function handleEditImageFileChange(e) {
+            const file = e.target.files[0];
+            const imageDataUrlInput = document.getElementById('edit-image-data-url');
+            const imagePreview = document.getElementById('edit-image-preview');
+
+            if (file) {
+                try {
+                    const dataUrl = await fileToBase64(file);
+                    imageDataUrlInput.value = dataUrl;
+                    imagePreview.src = dataUrl;
+                } catch (error) {
+                    console.error("Error converting file to base64:", error);
+                    // Reset to old image if failure
+                }
+            }
+        }
+
+        // --- FORM SUBMISSIONS ---
+
+        async function handleAddFormSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const personData = {
+                name: document.getElementById('name').value.trim(),
+                role: document.getElementById('role').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                notes: document.getElementById('notes').value.trim(),
+                imageDataURL: document.getElementById('image-data-url').value.trim()
+            };
+
+            await savePerson(personData);
+            form.reset();
+            // Reset image label display
+            document.getElementById('image-label').textContent = 'Click to Select Profile Image (Optional)';
+            document.getElementById('image-label').classList.add('border-fuchsia-400/50');
+            document.getElementById('image-label').classList.remove('border-green-400/50');
+        }
+
+        async function handleEditFormSubmit(e) {
+            e.preventDefault();
+            const personId = parseInt(document.getElementById('edit-id').value);
+            const personData = {
+                name: document.getElementById('edit-name').value.trim(),
+                role: document.getElementById('edit-role').value.trim(),
+                phone: document.getElementById('edit-phone').value.trim(),
+                email: document.getElementById('edit-email').value.trim(),
+                notes: document.getElementById('edit-notes').value.trim(),
+                imageDataURL: document.getElementById('edit-image-data-url').value.trim()
+            };
+
+            await updatePerson(personId, personData);
+            closeModal();
+        }
+
+        // --- BULK ACTION LOGIC ---
+        
+        function updateBulkActionControls() {
+            const count = selectedPeople.size;
+            bulkSelectionCount.textContent = `${count} contact${count === 1 ? '' : 's'} selected`;
+            
+            if (count > 0) {
+                bulkActionBar.classList.remove('hidden');
+                bulkActionBar.classList.add('flex');
+            } else {
+                bulkActionBar.classList.add('hidden');
+                bulkActionBar.classList.remove('flex');
+            }
+            
+            // Update select-all checkbox state
+            const allVisibleIds = allPeople.map(p => p.id); // Assuming allPeople is the currently rendered set
+            selectAllCheckbox.checked = count > 0 && allVisibleIds.every(id => selectedPeople.has(id));
+            selectAllCheckbox.indeterminate = count > 0 && count < allVisibleIds.length;
+        }
+        
+        window.togglePersonSelection = function(id, isChecked) {
+            if (isChecked) {
+                selectedPeople.add(id);
+            } else {
+                selectedPeople.delete(id);
+            }
+            updateBulkActionControls();
+        }
+
+        window.toggleSelectAll = function(isChecked) {
+            // Get the IDs of currently visible/filtered people
+            const query = searchInput.value.toLowerCase().trim();
+            const visiblePeople = allPeople.filter(person => {
+                return (person.name || '').toLowerCase().includes(query) || (person.role || '').toLowerCase().includes(query);
+            });
+
+            if (isChecked) {
+                visiblePeople.forEach(person => selectedPeople.add(person.id));
+            } else {
+                visiblePeople.forEach(person => selectedPeople.delete(person.id));
+            }
+            
+            // Re-render the list to update individual checkboxes
+            filterPeople(); 
+            updateBulkActionControls();
+        }
+
+        async function bulkDeleteSelected() {
+            if (selectedPeople.size === 0) return;
+            
+            // Use custom modal for confirmation instead of alert/confirm if necessary, 
+            // but for now, we'll use a simple modal as instructed by the system prompt.
+            if (!confirm(`Are you sure you want to delete ${selectedPeople.size} selected contact(s)? This action cannot be undone.`)) {
+                return;
+            }
+
+            updateStatus(`🟡 Deleting ${selectedPeople.size} contacts...`, false);
+            
+            try {
+                const store = await transaction('readwrite');
+                selectedPeople.forEach(id => {
+                    store.delete(id);
+                });
+                
+                // Wait for the transaction to complete
+                await new Promise((resolve, reject) => {
+                    store.transaction.oncomplete = resolve;
+                    store.transaction.onerror = reject;
+                });
+                
+                await loadData();
+                updateStatus(`✅ Successfully deleted ${selectedPeople.size} contact(s).`, false);
+                selectedPeople.clear();
+                updateBulkActionControls();
+            } catch (e) {
+                console.error("Bulk delete failed:", e);
+                updateStatus("❌ Bulk delete failed. See console for details.", true);
+            }
+        }
+        
+        function bulkExportSelected() {
+             if (selectedPeople.size === 0) return updateStatus("🟡 Bulk Export skipped: No contacts selected.", false);
+
+            const selectedData = allPeople.filter(p => selectedPeople.has(p.id));
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Name,Role,Phone,Email,Notes\n";
+            
+            selectedData.forEach(person => {
+                const row = [
+                    person.name,
+                    person.role,
+                    person.phone || '',
+                    person.email || '',
+                    // Use quotes for notes to handle commas/newlines
+                    `"${(person.notes || '').replace(/"/g, '""').replace(/\r?\n|\r/g, ' ')}"` 
+                ].map(item => item.includes(',') ? `"${item}"` : item).join(',');
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `personnel_selected_data_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            updateStatus(`✅ Bulk CSV Export successful! Downloaded ${selectedData.length} selected records.`, false);
+        }
+
+        // --- GLOBAL ACTIONS ---
+        
+        function exportAllCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Name,Role,Phone,Email,Notes\n";
+            
+            allPeople.forEach(person => {
+                const row = [
+                    person.name,
+                    person.role,
+                    person.phone || '',
+                    person.email || '',
+                    `"${(person.notes || '').replace(/"/g, '""').replace(/\r?\n|\r/g, ' ')}"` 
+                ].map(item => item.includes(',') ? `"${item}"` : item).join(',');
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `personnel_full_data_backup_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            updateStatus(`✅ CSV Export successful! Downloaded ${allPeople.length} records.`, false);
+        }
+
+        function backupJSON() {
+            const jsonString = JSON.stringify(allPeople, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `personnel_full_backup_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            updateStatus(`✅ JSON Backup successful! Downloaded ${allPeople.length} records.`, false);
+        }
+
+        function restoreJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            updateStatus("🟡 Starting data restoration from JSON...", false);
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) throw new Error("JSON format invalid: Expected an array.");
+                    
+                    if (!confirm(`Are you sure you want to replace all current data with ${data.length} records from the JSON file? This cannot be undone.`)) {
+                         updateStatus("🟡 Data restoration cancelled by user.", false);
+                         return;
+                    }
+                    
+                    const store = await transaction('readwrite');
+                    // 1. Clear existing data
+                    const clearRequest = store.clear();
+                    await new Promise((resolve, reject) => {
+                        clearRequest.onsuccess = resolve;
+                        clearRequest.onerror = reject;
+                    });
+
+                    // 2. Add new data
+                    data.forEach(person => {
+                        // Ensure ID is treated as primary key/keyPath for IndexedDB 'put' operation
+                        store.put(person); 
+                    });
+
+                    // Wait for the entire transaction to complete
+                    await new Promise((resolve, reject) => {
+                        store.transaction.oncomplete = resolve;
+                        store.transaction.onerror = reject;
+                    });
+                    
+                    await loadData();
+                    updateStatus(`✅ Successfully restored and replaced data with ${data.length} records.`, false);
+
+                } catch (error) {
+                    console.error("Data restore failed:", error);
+                    updateStatus(`❌ Data restoration failed. Error: ${error.message}`, true);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- SORTING CONTROL ---
+
+        window.handleSort = function(key) {
+            if (currentSort.key === key) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.key = key;
+                currentSort.direction = 'asc'; // Default to asc when changing column
+            }
+            loadData();
+        }
+
+        // --- UI AND MODAL CONTROL ---
+        
+        function renderPeopleList(people) {
+            const listElement = document.getElementById('people-list');
+            listElement.innerHTML = '';
+            
+            // Update sort indicators
+            document.querySelectorAll('[id^="sort-icon-"]').forEach(el => el.textContent = '');
+            const icon = currentSort.direction === 'asc' ? '▲' : '▼';
+            const sortIconEl = document.getElementById(`sort-icon-${currentSort.key}`);
+            if (sortIconEl) {
+                sortIconEl.textContent = icon;
+            }
+
+            if (people.length === 0) {
+                listElement.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-400">No contacts found.</td></tr>`;
+                return;
+            }
+
+            people.forEach(person => {
+                const isSelected = selectedPeople.has(person.id);
+                const hasImage = person.imageDataURL && person.imageDataURL.length > 0;
+                const hasContact = person.phone || person.email;
+
+                const row = document.createElement('tr');
+                row.className = `tree-row transition duration-150 ${isSelected ? 'bg-fuchsia-900/40' : ''}`;
+                row.innerHTML = `
+                    <td class="p-3 text-center">
+                        <input type="checkbox" onchange="togglePersonSelection(${person.id}, this.checked)" ${isSelected ? 'checked' : ''} title="Select">
+                    </td>
+                    <td class="px-3 py-3 font-semibold text-white">
+                        <div class="flex items-center space-x-3">
+                            <img class="w-10 h-10 rounded-full object-cover border-2 ${hasImage ? 'border-fuchsia-400' : 'border-gray-500'}" 
+                                 src="${person.imageDataURL || 'https://placehold.co/40x40/dddddd/ffffff?text=No+Img'}" 
+                                 alt="${person.name} Profile">
+                            <div>
+                                <div class="text-lg">${person.name}</div>
+                                <div class="text-xs text-gray-400 flex items-center gap-2 mt-1 sm:hidden">
+                                    ${person.role}
+                                </div>
+                                <div class="text-xs text-gray-400 flex items-center gap-2 mt-1">
+                                    ${hasContact ? `<span class="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Contact</span>` : ''}
+                                    ${hasImage ? `<span class="bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">Photo</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-3 py-3 hidden sm:table-cell text-gray-300">${person.role}</td>
+                    <td class="px-3 py-3 hidden md:table-cell text-sm text-gray-400">
+                        ${person.phone ? `<div class="truncate">${person.phone}</div>` : ''}
+                        ${person.email ? `<div class="truncate">${person.email}</div>` : ''}
+                    </td>
+                    <td class="px-3 py-3">
+                        <button onclick="openEditModal(${person.id})" class="text-sm px-3 py-1 bg-yellow-600/50 text-yellow-300 rounded-lg hover:bg-yellow-600 hover:text-white transition">
+                            ✏️ Edit
+                        </button>
+                    </td>
+                `;
+                listElement.appendChild(row);
+            });
+        }
+
+        const closeModal = () => {
+            editModal.classList.add('hidden');
+            editModal.classList.remove('flex');
+            // Reset delete button state
+            const deleteBtn = document.getElementById('delete-btn');
+            deleteBtn.textContent = '🗑️ Delete';
+            deleteBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+            deleteBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+            deleteBtn.dataset.deleteState = '0';
+        };
+        window.closeModal = closeModal; 
+        
+        window.openEditModal = (id) => {
+            const person = allPeople.find(p => p.id === id);
+            if (!person) return;
+            
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-name').value = person.name || '';
+            document.getElementById('edit-role').value = person.role || '';
+            document.getElementById('edit-phone').value = person.phone || '';
+            document.getElementById('edit-email').value = person.email || '';
+            document.getElementById('edit-notes').value = person.notes || '';
+            
+            // Image handling for modal
+            const imageDataURL = person.imageDataURL || '';
+            document.getElementById('edit-image-data-url').value = imageDataURL;
+            document.getElementById('edit-image-preview').src = imageDataURL || 'https://placehold.co/96x96/dddddd/ffffff?text=No+Img';
+
+            closeModal(); // Ensure state is clean
+            editModal.classList.add('flex');
+            editModal.classList.remove('hidden');
+        };
+
+        // Complete the truncated function
+        window.deletePersonWrapper = function(btn) {
+            let state = parseInt(btn.dataset.deleteState); 
+            const personId = parseInt(document.getElementById('edit-id').value);
+            
+            if (state === 0) {
+                btn.textContent = 'Click to CONFIRM DELETE';
+                btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                btn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                btn.dataset.deleteState = '1';
+            } else if (state === 1) {
+                deletePerson(personId);
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
+
