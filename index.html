@@ -131,6 +131,8 @@
                     <input type="tel" id="phone" placeholder="Phone #" class="p-2 rounded-lg">
                     <input type="email" id="email" placeholder="Email" class="p-2 rounded-lg">
                     
+                    <textarea id="address" placeholder="Full Address (optional)" rows="2" class="col-span-1 sm:col-span-2 p-2 rounded-lg"></textarea>
+                    
                     <div class="col-span-1 sm:col-span-2">
                         <input type="file" id="image-file" accept="image/*" class="hidden">
                         <label for="image-file" id="image-label" class="block w-full p-2 bg-gray-700 border-2 border-dashed border-fuchsia-400/50 text-fuchsia-300 text-center rounded-lg cursor-pointer hover:bg-gray-900 transition">
@@ -224,6 +226,8 @@
                 <input type="text" id="edit-role" placeholder="Role/Job" required class="w-full p-2 rounded-lg">
                 <input type="tel" id="edit-phone" placeholder="Phone #" class="w-full p-2 rounded-lg">
                 <input type="email" id="edit-email" placeholder="Email" class="w-full p-2 rounded-lg">
+                
+                <textarea id="edit-address" placeholder="Full Address (optional)" rows="2" class="w-full p-2 rounded-lg"></textarea>
                 
                 <div class="text-center p-3 border border-gray-600 rounded-lg bg-gray-700">
                     <img id="edit-image-preview" class="w-24 h-24 rounded-full mx-auto mb-2 object-cover border-2 border-fuchsia-400" src="https://placehold.co/96x96/dddddd/ffffff?text=No+Img" alt="Profile Image">
@@ -495,7 +499,8 @@
 
             const filtered = allPeople.filter(person => {
                 return (person.name || '').toLowerCase().includes(query) ||
-                       (person.role || '').toLowerCase().includes(query); 
+                       (person.role || '').toLowerCase().includes(query) ||
+                       (person.address || '').toLowerCase().includes(query); // Check address too
             });
             
             renderPeopleList(filtered);
@@ -561,6 +566,8 @@
                 role: document.getElementById('role').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
                 email: document.getElementById('email').value.trim(),
+                // NEW: Address field
+                address: document.getElementById('address').value.trim(),
                 notes: document.getElementById('notes').value.trim(),
                 imageDataURL: document.getElementById('image-data-url').value.trim()
             };
@@ -584,6 +591,8 @@
                 role: document.getElementById('edit-role').value.trim(),
                 phone: document.getElementById('edit-phone').value.trim(),
                 email: document.getElementById('edit-email').value.trim(),
+                // NEW: Address field
+                address: document.getElementById('edit-address').value.trim(),
                 notes: document.getElementById('edit-notes').value.trim(),
                 imageDataURL: document.getElementById('edit-image-data-url').value.trim()
             };
@@ -621,7 +630,7 @@
         window.toggleSelectAll = function(isChecked) {
             const query = searchInput.value.toLowerCase().trim();
             const visiblePeople = allPeople.filter(person => {
-                return (person.name || '').toLowerCase().includes(query) || (person.role || '').toLowerCase().includes(query);
+                return (person.name || '').toLowerCase().includes(query) || (person.role || '').toLowerCase().includes(query) || (person.address || '').toLowerCase().includes(query);
             });
 
             if (isChecked) {
@@ -679,6 +688,9 @@
                 if (person.email) {
                     messageBody += `   Email: ${person.email}\n`;
                 }
+                if (person.address) {
+                    messageBody += `   Address: ${person.address.replace(/\r?\n|\r/g, ' / ')}\n`;
+                }
                 messageBody += "\n";
             });
 
@@ -695,8 +707,9 @@
 
             const selectedData = allPeople.filter(p => selectedPeople.has(p.id));
 
+            // NEW: Added 'Address' column
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Name,Role,Phone,Email,Notes\n";
+            csvContent += "Name,Role,Phone,Email,Address,Notes\n";
             
             selectedData.forEach(person => {
                 const row = [
@@ -704,6 +717,8 @@
                     person.role,
                     person.phone || '',
                     person.email || '',
+                    // NEW: Address data
+                    `"${(person.address || '').replace(/"/g, '""').replace(/\r?\n|\r/g, ' ')}"`,
                     `"${(person.notes || '').replace(/"/g, '""').replace(/\r?\n|\r/g, ' ')}"` 
                 ].map(item => item.includes(',') ? `"${item}"` : item).join(',');
                 csvContent += row + "\n";
@@ -720,8 +735,9 @@
         }
 
         function exportAllCSV() {
+            // NEW: Added 'Address' column
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Name,Role,Phone,Email,Notes\n";
+            csvContent += "Name,Role,Phone,Email,Address,Notes\n";
             
             allPeople.forEach(person => {
                 const row = [
@@ -729,6 +745,8 @@
                     person.role,
                     person.phone || '',
                     person.email || '',
+                    // NEW: Address data
+                    `"${(person.address || '').replace(/"/g, '""').replace(/\r?\n|\r/g, ' ')}"`,
                     `"${(person.notes || '').replace(/"/g, '""').replace(/\r?\n|\r/g, ' ')}"` 
                 ].map(item => item.includes(',') ? `"${item}"` : item).join(',');
                 csvContent += row + "\n";
@@ -833,6 +851,7 @@
                 const isSelected = selectedPeople.has(person.id);
                 const hasImage = person.imageDataURL && person.imageDataURL.length > 0;
                 const hasContact = person.phone || person.email;
+                const hasAddress = person.address && person.address.trim().length > 0; // NEW: Check for address
 
                 const row = document.createElement('tr');
                 row.className = `tree-row transition duration-150 cursor-pointer ${isSelected ? 'bg-fuchsia-900/40' : ''}`;
@@ -855,7 +874,7 @@
                                 <div class="text-xs text-gray-400 flex items-center gap-2 mt-1">
                                     ${hasContact ? `<span class="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Contact</span>` : ''}
                                     ${hasImage ? `<span class="bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">Photo</span>` : ''}
-                                </div>
+                                    ${hasAddress ? `<span class="bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full">Location</span>` : ''} </div>
                             </div>
                         </div>
                     </td>
@@ -906,6 +925,7 @@
             document.getElementById('edit-role').value = person.role || '';
             document.getElementById('edit-phone').value = person.phone || '';
             document.getElementById('edit-email').value = person.email || '';
+            document.getElementById('edit-address').value = person.address || ''; // NEW: Populate address
             document.getElementById('edit-notes').value = person.notes || '';
             
             const imageDataURL = person.imageDataURL || '';
@@ -934,6 +954,17 @@
                     <a href="mailto:${person.email}" class="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.8 5.2a2 2 0 002.4 0L21 8m-18 6V6a2 2 0 012-2h14a2 2 0 012 2v8m-18 0h18"></path></svg>
                         Email
+                    </a>
+                `;
+            }
+            
+            // NEW: Add a map link if address is present
+             if (person.address) {
+                const encodedAddress = encodeURIComponent(person.address);
+                contactActions.innerHTML += `
+                    <a href="https://maps.google.com/?q=${encodedAddress}" target="_blank" class="flex items-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-semibold">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Map
                     </a>
                 `;
             }
