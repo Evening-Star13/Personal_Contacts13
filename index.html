@@ -102,10 +102,10 @@
       class="fixed top-0 right-0 h-full w-full max-w-xs container-card shadow-2xl p-6 overflow-y-auto"
     >
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-blue-600">System Analytics</h2>
+        <h2 class="text-2xl font-bold text-violet-600">System Analytics</h2>
         <button
           onclick="toggleSidebar(false)"
-          class="text-white hover:text-blue-600 p-1 rounded-full bg-gray-700/50 transition"
+          class="text-white hover:text-violet-600 p-1 rounded-full bg-gray-700/50 transition"
         >
           <svg
             class="w-6 h-6"
@@ -175,7 +175,7 @@
         </h1>
         <button
           onclick="toggleSidebar(true)"
-          class="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition"
+          class="p-2 rounded-lg bg-violet-600 hover:bg-violet-700 transition"
           aria-label="Open Analytics Menu"
         >
           <svg
@@ -202,17 +202,17 @@
         ✅ Database status: Initializing IndexedDB...
       </div>
 
-      <div class="bg-gray-800 p-5 rounded-lg mb-8 border border-blue-500/20">
+      <div class="bg-gray-800 p-5 rounded-lg mb-8 border border-violet-500/20">
         <button
           id="toggle-add-btn"
           aria-expanded="false"
           aria-controls="add-contact-form-container"
-          class="w-full text-left flex justify-between items-center pb-2 font-normal text-blue-600 text-xl hover:text-white transition"
+          class="w-full text-left flex justify-between items-center pb-2 font-normal text-violet-600 text-xl hover:text-white transition"
         >
           ➕ Add New Contact
           <svg
             id="add-toggle-icon"
-            class="w-6 h-6 transition-transform duration-300 transform rotate-180 text-blue-600"
+            class="w-6 h-6 transition-transform duration-300 transform rotate-180 text-violet-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -280,7 +280,7 @@
               <label
                 for="image-file"
                 id="image-label"
-                class="block w-full p-2 bg-gray-700 border-2 border-dashed border-violet-600/50 text-blue-300 text-center rounded-lg cursor-pointer hover:bg-gray-900 transition"
+                class="block w-full p-2 bg-gray-700 border-2 border-dashed border-violet-600/50 text-violet-300 text-center rounded-lg cursor-pointer hover:bg-gray-900 transition"
               >
                 Click to Select Profile Image (Optional)
               </label>
@@ -297,7 +297,7 @@
             <button
               type="submit"
               id="add-btn"
-              class="col-span-1 sm:col-span-2 py-3 bg-blue-600 text-white font-thin rounded-lg hover:bg-blue-700 transition"
+              class="col-span-1 sm:col-span-2 py-3 bg-violet-600 text-white font-thin rounded-lg hover:bg-violet-700 transition"
             >
               ➕ Add Person to Contacts
             </button>
@@ -308,29 +308,29 @@
         type="text"
         id="search-input"
         placeholder="🔍 Search contacts by name..."
-        class="w-full p-3 rounded-lg bg-gray-700 text-white mb-6 border border-gray-600 focus:ring-blue-500 focus:border-blue-500"
+        class="w-full p-3 rounded-lg bg-gray-700 text-white mb-6 border border-gray-600 focus:ring-violet-500 focus:border-violet-500"
       />
 
       <div
         id="bulk-actions-bar"
-        class="hidden flex flex-col sm:flex-row items-center justify-between p-3 mb-4 rounded-xl bg-gray-900 border border-blue-700/50 shadow-xl"
+        class="hidden flex flex-col sm:flex-row items-center justify-between p-3 mb-4 rounded-xl bg-gray-900 border border-violet-700/50 shadow-xl"
       >
         <span
           id="bulk-selection-count"
-          class="font-semibold text-lg text-blue-600 mb-2 sm:mb-0"
+          class="font-semibold text-lg text-violet-600 mb-2 sm:mb-0"
         >
           0 contacts selected
         </span>
         <div class="flex gap-3">
           <button
             id="bulk-share-btn"
-            class="px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition"
+            class="px-4 py-2 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 transition"
           >
             📲 Share Selected (Text)
           </button>
           <button
             id="bulk-export-btn"
-            class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+            class="px-4 py-2 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 transition"
           >
             📄 Export Selected (CSV)
           </button>
@@ -346,13 +346,13 @@
       <div class="flex flex-col md:flex-row gap-3 mb-6">
         <button
           id="export-all-csv-btn"
-          class="w-full md:w-auto px-4 py-2 bg-blue-600 text-white font-thin rounded-lg hover:bg-blue-700 transition"
+          class="w-full md:w-auto px-4 py-2 bg-violet-600 text-white font-thin rounded-lg hover:bg-violet-700 transition"
         >
           📄 Export All to CSV
         </button>
         <button
           id="backup-json-btn"
-          class="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white font-thin rounded-lg hover:bg-indigo-700 transition"
+          class="w-full md:w-auto px-4 py-2 bg-violet-600 text-white font-thin rounded-lg hover:bg-violet-700 transition"
         >
           📥 Backup to JSON
         </button>
@@ -375,12 +375,12 @@
           id="toggle-list-btn"
           aria-expanded="false"
           aria-controls="contact-list-container"
-          class="w-full text-left flex justify-between items-center px-4 py-3 bg-gray-700/50 hover:bg-gray-700 transition font-normal text-blue-600 text-lg"
+          class="w-full text-left flex justify-between items-center px-4 py-3 bg-gray-700/50 hover:bg-gray-700 transition font-normal text-violet-600 text-lg"
         >
           Contacts Directory
           <svg
             id="toggle-icon"
-            class="w-6 h-6 transition-transform duration-300 transform rotate-180 text-blue-600"
+            class="w-6 h-6 transition-transform duration-300 transform rotate-180 text-violet-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -404,7 +404,7 @@
             <thead>
               <tr>
                 <th
-                  class="p-3 text-center text-xs font-medium text-blue-600 uppercase tracking-wider"
+                  class="p-3 text-center text-xs font-medium text-violet-600 uppercase tracking-wider"
                 >
                   <input
                     type="checkbox"
@@ -414,25 +414,25 @@
                 </th>
                 <th
                   onclick="handleSort('name')"
-                  class="px-3 py-3 text-left text-xs font-medium text-blue-600 hover:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700/50 transition"
+                  class="px-3 py-3 text-left text-xs font-medium text-violet-600 hover:text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700/50 transition"
                 >
                   Name & Contact Badges
                   <span id="sort-icon-name" class="ml-1 inline-block"></span>
                 </th>
                 <th
                   onclick="handleSort('role')"
-                  class="px-3 py-3 text-left text-xs font-medium text-blue-600 hover:text-white uppercase tracking-wider hidden sm:table-cell cursor-pointer hover:bg-gray-700/50 transition"
+                  class="px-3 py-3 text-left text-xs font-medium text-violet-600 hover:text-white uppercase tracking-wider hidden sm:table-cell cursor-pointer hover:bg-gray-700/50 transition"
                 >
                   Role
                   <span id="sort-icon-role" class="ml-1 inline-block"></span>
                 </th>
                 <th
-                  class="px-3 py-3 text-left text-xs font-medium text-blue-600 uppercase tracking-wider hidden md:table-cell"
+                  class="px-3 py-3 text-left text-xs font-medium text-violet-600 uppercase tracking-wider hidden md:table-cell"
                 >
                   Contact Info
                 </th>
                 <th
-                  class="px-3 py-3 text-left text-xs font-medium text-blue-600 uppercase tracking-wider"
+                  class="px-3 py-3 text-left text-xs font-medium text-violet-600 uppercase tracking-wider"
                 >
                   Actions
                 </th>
@@ -458,7 +458,7 @@
       class="fixed inset-0 bg-gray-900 bg-opacity-90 hidden items-center justify-center p-4 z-50"
     >
       <div class="container-card rounded-xl p-6 w-full max-w-md">
-        <h3 class="text-2xl font-bold mb-4 text-blue-600">Contact Details</h3>
+        <h3 class="text-2xl font-bold mb-4 text-violet-600">Contact Details</h3>
         <form id="edit-form" class="space-y-4">
           <input type="hidden" id="edit-id" />
           <input
@@ -541,7 +541,7 @@
             </button>
             <button
               type="submit"
-              class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              class="w-full sm:w-auto px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition"
             >
               💾 Save Changes
             </button>
@@ -1303,7 +1303,7 @@
 
           const row = document.createElement("tr");
           row.className = `tree-row transition duration-150 cursor-pointer ${
-            isSelected ? "bg-blue-900/40" : ""
+            isSelected ? "bg-violet-900/40" : ""
           }`;
           row.setAttribute("onclick", `openEditModal(${person.id})`);
 
@@ -1333,12 +1333,12 @@
                                 <div class="text-xs text-gray-400 flex items-center gap-2 mt-1">
                                     ${
                                       hasContact
-                                        ? `<span class="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Contact</span>`
+                                        ? `<span class="bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">Contact</span>`
                                         : ""
                                     }
                                     ${
                                       hasImage
-                                        ? `<span class="bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">Photo</span>`
+                                        ? `<span class="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Photo</span>`
                                         : ""
                                     }
                                     ${
@@ -1356,16 +1356,16 @@
                         ${
                           person.phone
                             ? `<div class="flex gap-2 mb-1">
-                                <a href="tel:${person.phone}" class="text-blue-600 hover:text-blue-300 font-medium" onclick="event.stopPropagation()">📞 Call</a>
+                                <a href="tel:${person.phone}" class="text-violet-600 hover:text-violet-300 font-medium" onclick="event.stopPropagation()">📞 Call</a>
                                 <span class="text-gray-600">|</span>
-                                <a href="sms:${person.phone}" class="text-blue-600 hover:text-blue-300 font-medium" onclick="event.stopPropagation()">💬 Text</a>
+                                <a href="sms:${person.phone}" class="text-violet-600 hover:text-violet-300 font-medium" onclick="event.stopPropagation()">💬 Text</a>
                             </div>`
                             : ""
                         }
                         ${
                           person.email
                             ? `<div>
-                                <a href="mailto:${person.email}" class="text-blue-600 hover:text-blue-300 truncate" onclick="event.stopPropagation()">${person.email}</a>
+                                <a href="mailto:${person.email}" class="text-violet-600 hover:text-violet-300 truncate" onclick="event.stopPropagation()">${person.email}</a>
                             </div>`
                             : ""
                         }
@@ -1416,13 +1416,13 @@
 
         if (person.phone) {
           contactActions.innerHTML += `
-                    <a href="tel:${person.phone}" class="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
+                    <a href="tel:${person.phone}" class="flex items-center gap-2 px-3 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition font-thin">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
                         Call
                     </a>
                 `;
           contactActions.innerHTML += `
-                    <a href="sms:${person.phone}" class="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold">
+                    <a href="sms:${person.phone}" class="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-thin">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.673a9.965 9.965 0 01-1.631-4.327c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                         Text
                     </a>
@@ -1430,7 +1430,7 @@
         }
         if (person.email) {
           contactActions.innerHTML += `
-                    <a href="mailto:${person.email}" class="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
+                    <a href="mailto:${person.email}" class="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-thin">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.8 5.2a2 2 0 002.4 0L21 8m-18 6V6a2 2 0 012-2h14a2 2 0 012 2v8m-18 0h18"></path></svg>
                         Email
                     </a>
@@ -1441,7 +1441,7 @@
         if (person.address) {
           const encodedAddress = encodeURIComponent(person.address);
           contactActions.innerHTML += `
-                    <a href="https://maps.google.com/?q=${encodedAddress}" target="_blank" class="flex items-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-semibold">
+                    <a href="https://maps.google.com/?q=${encodedAddress}" target="_blank" class="flex items-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-thin">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         Map
                     </a>
